@@ -3,37 +3,38 @@ import { NextRequest, NextResponse } from "next/server";
 import axios from "axios";
 import * as cheerio from "cheerio";
 
-const KEY_PHRASES = [
-  "pre k preschool learning games",
-  "toddler games for 4 year olds",
-  "toddler games for 2 year olds",
-  "baby games for 1yr 2yr 3yr old",
-  "preschool learning",
-  "educational games for children age 4 6",
-  "toddler",
-  "kids learning games",
-  "abc learning for kids",
-  "shapes and colors for toddlers",
-  "learning numbers",
-  "phonics for kids",
-  "early education games",
-  "kindergarten learning",
-  "fun learning games",
-  "puzzle games for toddlers",
-  "games for babies",
-  "games for toddlers",
-  "math games for kids",
-  "preschool abc",
-  "reading games for kids",
-  "colors and shapes",
-  "preschool puzzle",
-  "learning games for toddlers",
-  "kids educational games"
-];
+function analyzeKeywords(text: string, phrases: string[]) {
+  const textWords = new Set(text.toLowerCase().match(/\b\w+\b/g));
+  const results: {
+    phrase: string;
+    match: number;
+    total: number;
+    percent: number;
+    matchedWords: string[];
+  }[] = [];
+
+  for (const phrase of phrases) {
+    const phraseWords = phrase.toLowerCase().split(/\s+/);
+    const matchedWords = phraseWords.filter((word) => textWords.has(word));
+    const percent = Math.round((matchedWords.length / phraseWords.length) * 100);
+
+    if (matchedWords.length > 0) {
+      results.push({
+        phrase,
+        match: matchedWords.length,
+        total: phraseWords.length,
+        percent,
+        matchedWords,
+      });
+    }
+  }
+
+  return results.sort((a, b) => b.percent - a.percent);
+}
 
 export async function POST(req: NextRequest) {
   try {
-    const { url } = await req.json();
+    const { url, phrases } = await req.json();
 
     const response = await axios.get(url, {
       headers: { "User-Agent": "Mozilla/5.0" },
@@ -45,18 +46,8 @@ export async function POST(req: NextRequest) {
     const description = $("section.section__description").text().trim();
 
     const combinedText = `${title} ${subtitle} ${description}`.toLowerCase();
-    const textWords = new Set(combinedText.match(/\b\w+\b/g) || []);
 
-    const results = KEY_PHRASES.map((phrase) => {
-      const words = phrase.toLowerCase().split(" ");
-      const match = words.filter((w) => textWords.has(w));
-      const percent = Math.round((match.length / words.length) * 100);
-      return match.length > 0
-        ? { phrase, match: match.length, total: words.length, percent }
-        : null;
-    }).filter(Boolean);
-
-    results.sort((a, b) => b!.percent - a!.percent);
+    const results = analyzeKeywords(combinedText, phrases);
 
     return NextResponse.json({ results });
   } catch (err) {
