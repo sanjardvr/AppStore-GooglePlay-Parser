@@ -97,3 +97,13 @@
 .wrapper .Results strong {
   color: #02e34d;
 }
+
+
+.columns {
+  display: flex;
+  flex-direction: row;
+  gap: 40px;
+  justify-content: center;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
