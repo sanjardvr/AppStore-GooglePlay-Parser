@@ -1,112 +1,154 @@
 .page {
-  padding: 40px;
-  font-family: 'Segoe UI', sans-serif;
-  background-color: #000000;
-  color: #1f2937;
-  min-height: 100vh;
+  padding: 2rem;
+  max-width: 960px;
+  margin: auto;
+  font-family: system-ui, sans-serif;
+  background-color: #000;
+  color: #fff;
 }
 
 .heading {
-  font-size: 36px;
+  font-size: 2rem;
   font-weight: bold;
-  margin-bottom: 30px;
+  margin-bottom: 1.5rem;
   text-align: center;
-  color: #149ce0;
 }
 
-.wrapper {
-  max-width: 1200px;
-  margin: 0 auto;
+.card {
+  background: #111;
+  padding: 1.5rem;
+  border-radius: 12px;
+  border: 1px solid #333;
+  margin-bottom: 2rem;
 }
 
-.columns {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 40px;
-  justify-content: center;
-  margin-bottom: 40px;
+.description {
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  color: #ccc;
 }
 
-.column {
-  flex: 1;
-  min-width: 350px;
-  background: #ffffff;
-  border-radius: 16px;
-  padding: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
-.Input {
+.textarea {
   width: 100%;
-  padding: 12px 16px;
-  font-size: 16px;
-  border: 1px solid #d1d5db;
+  padding: 1rem;
   border-radius: 8px;
-  margin: 8px 0 16px;
-  transition: border 0.2s;
-}
-
-.Input:focus {
-  outline: none;
-  border-color: #3b82f6;
-}
-
-.startButton {
-  background-color: #3b82f6;
+  border: 1px solid #444;
+  background-color: #1a1a1a;
   color: white;
-  padding: 12px;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  resize: vertical;
+}
+
+.button {
+  background-color: #6366f1;
+  color: white;
+  padding: 0.6rem 1.2rem;
   border-radius: 8px;
-  text-align: center;
+  border: none;
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 600;
   transition: background-color 0.2s ease;
 }
 
-.startButton:hover {
-  background-color: #2563eb;
+.button:disabled {
+  background-color: #4f46e5;
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-.Results {
-  margin-top: 16px;
-  font-size: 15px;
-  line-height: 1.5;
+.results {
+  background: #111;
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px solid #333;
 }
 
-.error {
-  color: red;
-  margin: 8px 0;
+.resultsHeading {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: #fff;
 }
 
-.phraseBox {
-  margin-top: 60px;
-  background: #ffffff;
-  padding: 24px;
-  border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+  margin-bottom: 2rem;
 }
 
-.suggestBox {
-  margin-top: 40px;
-  background: #ffffff;
-  padding: 24px;
-  border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+.table th,
+.table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #333;
+  text-align: left;
+  color: #ddd;
 }
 
-.suggestionList {
-  margin-top: 10px;
+.table th {
+  background-color: #1a1a1a;
+  font-weight: 600;
+  color: #aaa;
+}
+
+.appListWrapper {
+  padding: 1rem;
+  border-top: 1px solid #333;
+}
+
+.appGroup {
+  margin-bottom: 1.5rem;
+}
+
+.appGroup h3 {
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+  color: #fff;
+}
+
+.appList {
   list-style: none;
-  padding-left: 0;
+  padding-left: 1rem;
 }
 
-.suggestionList li {
-  padding: 8px 12px;
-  background-color: #f3f4f6;
+.appList li {
+  margin-bottom: 0.4rem;
+  color: #ccc;
+}
+
+.appList a {
+  color: #60a5fa;
+  text-decoration: none;
+}
+
+.appList a:hover {
+  text-decoration: underline;
+}
+
+
+.toggleWrapper {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.toggleButton {
+  background-color: #2d2d2d;
+  color: #ccc;
+  border: 1px solid #444;
   border-radius: 8px;
-  margin-bottom: 6px;
-  transition: background-color 0.2s;
+  padding: 0.4rem 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.suggestionList li:hover {
-  background-color: #e5e7eb;
+.toggleButton:hover {
+  background-color: #444;
+}
+
+.toggleButton.active {
+  background-color: #6366f1;
+  color: #fff;
+  border-color: #6366f1;
 }

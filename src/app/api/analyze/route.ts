@@ -1,57 +1,68 @@
-// app/api/analyze/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import axios from "axios";
 import * as cheerio from "cheerio";
 
-function analyzeKeywords(text: string, phrases: string[]) {
-  const textWords = new Set(text.toLowerCase().match(/\b\w+\b/g));
-  const results: {
-    phrase: string;
-    match: number;
-    total: number;
-    percent: number;
-    matchedWords: string[];
-  }[] = [];
+export async function POST(req: NextRequest) {
+  const body = await req.json();
+  const keywords: string[] = body.keywords;
 
-  for (const phrase of phrases) {
-    const phraseWords = phrase.toLowerCase().split(/\s+/);
-    const matchedWords = phraseWords.filter((word) => textWords.has(word));
-    const percent = Math.round((matchedWords.length / phraseWords.length) * 100);
+  if (!keywords || !Array.isArray(keywords)) {
+    return NextResponse.json({ error: "Неверный формат запроса" }, { status: 400 });
+  }
 
-    if (matchedWords.length > 0) {
+  const results = [];
+
+  for (const keyword of keywords) {
+    try {
+      const url = `https://play.google.com/store/search?q=${encodeURIComponent(keyword)}&c=apps`;
+      const response = await axios.get(url, {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
+          "Accept-Language": "en-US,en;q=0.9",
+        },
+      });
+
+      const $ = cheerio.load(response.data);
+      const apps: { title: string; url: string }[] = [];
+
+      $("a[href^='/store/apps/details']").each((_, el) => {
+        const link = $(el).attr("href");
+        const title = $(el).text().trim();
+
+        // Если текста нет, пробуем извлечь title через вложенные div'ы
+        const fallback = $(el).find("div").first().text().trim();
+
+        const finalTitle = title || fallback;
+
+        if (link && finalTitle && !apps.find((a) => a.url === link)) {
+          apps.push({ title: finalTitle, url: `https://play.google.com${link}` });
+        }
+      });
+
+      const kidsWords = ["kids", "child", "toddler", "baby", "preschool", "learning"];
+      const kidsApps = apps.filter((app) =>
+        kidsWords.some((word) => app.title.toLowerCase().includes(word))
+      );
+
       results.push({
-        phrase,
-        match: matchedWords.length,
-        total: phraseWords.length,
-        percent,
-        matchedWords,
+        keyword,
+        total: apps.length,
+        kids: kidsApps.length,
+        relevance: ((kidsApps.length / (apps.length || 1)) * 100).toFixed(1),
+        apps: apps.slice(0, 10),
+      });
+    } catch (e) {
+      results.push({
+        keyword,
+        total: 0,
+        kids: 0,
+        relevance: "0.0",
+        apps: [],
+        error: "Ошибка при парсинге или блокировка Google",
       });
     }
   }
 
-  return results.sort((a, b) => b.percent - a.percent);
-}
-
-export async function POST(req: NextRequest) {
-  try {
-    const { url, phrases } = await req.json();
-
-    const response = await axios.get(url, {
-      headers: { "User-Agent": "Mozilla/5.0" },
-    });
-
-    const $ = cheerio.load(response.data);
-    const title = $("h1").first().text().trim();
-    const subtitle = $("h2").first().text().trim();
-    const description = $("section.section__description").text().trim();
-
-    const combinedText = `${title} ${subtitle} ${description}`.toLowerCase();
-
-    const results = analyzeKeywords(combinedText, phrases);
-
-    return NextResponse.json({ results });
-  } catch (err) {
-    console.error("Server error:", err);
-    return NextResponse.json({ error: "Failed to analyze the URL." }, { status: 500 });
-  }
+  return NextResponse.json({ results });
 }
