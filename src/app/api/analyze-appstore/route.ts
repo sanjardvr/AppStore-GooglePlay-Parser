@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
       });
 
       const kidsWords = ["kids", "child", "toddler", "baby", "preschool", "learning"];
-      const kidsApps = apps.filter((app) =>
+      const kidsApps = apps.filter((app: { title: any; description: any; }) =>
         kidsWords.some((word) =>
           (app.title + app.description).toLowerCase().includes(word)
         )
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
         total: apps.length,
         kids: kidsApps.length,
         relevance: ((kidsApps.length / (apps.length || 1)) * 100).toFixed(1),
-        apps: apps.slice(0, 10).map((app) => ({
+        apps: apps.slice(0, 10).map((app: { title: any; url: any; }) => ({
           title: app.title,
           url: app.url,
         })),
