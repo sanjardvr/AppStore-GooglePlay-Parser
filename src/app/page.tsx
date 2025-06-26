@@ -4,11 +4,22 @@
 import { useState } from "react";
 import styles from "./page.module.css";
 
+const countries = [
+  { code: "us", name: "🇺🇸 USA" },
+  { code: "gb", name: "🇬🇧 UK" },
+  { code: "de", name: "🇩🇪 Germany" },
+  { code: "fr", name: "🇫🇷 France" },
+  { code: "jp", name: "🇯🇵 Japan" },
+  { code: "ru", name: "🇷🇺 Russia" },
+  { code: "ca", name: "🇨🇦 Canada" },
+];
+
 export default function KeywordAnalysisPage() {
   const [keywords, setKeywords] = useState("child game\ntoddler app\nbaby learning");
   const [isLoading, setIsLoading] = useState(false);
   const [results, setResults] = useState<any[]>([]);
   const [store, setStore] = useState<"play" | "appstore">("play");
+  const [country, setCountry] = useState("us");
 
   const handleAnalyze = async () => {
     setIsLoading(true);
@@ -16,7 +27,10 @@ export default function KeywordAnalysisPage() {
     const res = await fetch(api, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ keywords: keywords.split("\n") }),
+      body: JSON.stringify({ 
+        keywords: keywords.split("\n").map(k => k.trim()).filter(Boolean),
+        country 
+      }),
     });
     const data = await res.json();
     setResults(data.results);
@@ -40,6 +54,17 @@ export default function KeywordAnalysisPage() {
         >
           App Store
         </button>
+        <select
+          value={country}
+          onChange={(e) => setCountry(e.target.value)}
+          className={styles.dropdown}
+        >
+          {countries.map((c) => (
+            <option key={c.code} value={c.code}>
+              {c.name}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className={styles.card}>
@@ -64,7 +89,7 @@ export default function KeywordAnalysisPage() {
 
       {results.length > 0 && (
         <div className={styles.results}>
-          <h2 className={styles.resultsHeading}>Результаты</h2>
+          <h2 className={styles.resultsHeading}>Результаты ({country.toUpperCase()})</h2>
           <table className={styles.table}>
             <thead>
               <tr>
@@ -89,17 +114,32 @@ export default function KeywordAnalysisPage() {
           <div className={styles.appListWrapper}>
             {results.map((r, i) => (
               <div key={i} className={styles.appGroup}>
-                <h3>{r.keyword}</h3>
+                <h3>{r.keyword} (Top {r.apps?.length || 0})</h3>
                 {r.apps?.length > 0 ? (
-                  <ul className={styles.appList}>
-                    {r.apps.map((app: any, index: number) => (
-                      <li key={index}>
-                        🔗 <a href={app.url} target="_blank" rel="noopener noreferrer">
-                          {app.title || app.url}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
+                  <table className={styles.detailedTable}>
+                    <thead>
+                      <tr>
+                        <th>Title</th>
+                        <th>Developer</th>
+                        <th>Description</th>
+                        <th>URL</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {r.apps.map((app: any, index: number) => (
+                        <tr key={index}>
+                          <td>{app.title}</td>
+                          <td>{app.developer || "N/A"}</td>
+                          <td>{app.description || app.subtitle || "N/A"}</td>
+                          <td>
+                            <a href={app.url} target="_blank" rel="noopener noreferrer">
+                              View
+                            </a>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 ) : (
                   <p>Нет приложений для отображения.</p>
                 )}

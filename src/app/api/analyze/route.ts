@@ -2,47 +2,83 @@ import { NextRequest, NextResponse } from "next/server";
 import axios from "axios";
 import * as cheerio from "cheerio";
 
+const LANGUAGE_MAP: Record<string, string> = {
+  us: "en",
+  gb: "en",
+  de: "de",
+  fr: "fr",
+  jp: "ja",
+  ru: "ru",
+  ca: "en",
+};
+
 export async function POST(req: NextRequest) {
   const body = await req.json();
   const keywords: string[] = body.keywords;
+  const country: string = body.country || "us";
+  const lang = LANGUAGE_MAP[country] || "en";
 
   if (!keywords || !Array.isArray(keywords)) {
-    return NextResponse.json({ error: "Неверный формат запроса" }, { status: 400 });
+    return NextResponse.json({ error: "Invalid request format" }, { status: 400 });
   }
 
   const results = [];
 
   for (const keyword of keywords) {
     try {
-      const url = `https://play.google.com/store/search?q=${encodeURIComponent(keyword)}&c=apps`;
+      const url = `https://play.google.com/store/search?q=${encodeURIComponent(keyword)}&c=apps&gl=${country}&hl=${lang}`;
       const response = await axios.get(url, {
         headers: {
-          "User-Agent":
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
-          "Accept-Language": "en-US,en;q=0.9",
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
+          "Accept-Language": `${lang},en;q=0.9`,
         },
       });
 
       const $ = cheerio.load(response.data);
-      const apps: { title: string; url: string }[] = [];
-
+      const appLinks: string[] = [];
+      
       $("a[href^='/store/apps/details']").each((_, el) => {
         const link = $(el).attr("href");
-        const title = $(el).text().trim();
-
-        // Если текста нет, пробуем извлечь title через вложенные div'ы
-        const fallback = $(el).find("div").first().text().trim();
-
-        const finalTitle = title || fallback;
-
-        if (link && finalTitle && !apps.find((a) => a.url === link)) {
-          apps.push({ title: finalTitle, url: `https://play.google.com${link}` });
+        if (link && !appLinks.includes(link)) {
+          appLinks.push(link);
         }
       });
 
+      const apps = [];
+      for (const link of appLinks.slice(0, 10)) {
+        try {
+          const appUrl = `https://play.google.com${link}&hl=${lang}`;
+          const appResponse = await axios.get(appUrl, {
+            headers: {
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
+              "Accept-Language": `${lang},en;q=0.9`,
+            },
+          });
+          const $$ = cheerio.load(appResponse.data);
+
+          const title = $$("h1").first().text().trim();
+          const developer = $$("a[href^='/store/apps/dev']").first().text().trim();
+          const description = $$("div[itemprop='description'] > span").first().text().trim();
+
+          apps.push({
+            title,
+            developer,
+            description,
+            url: appUrl,
+            country,
+            language: lang,
+          });
+        } catch (e) {
+          console.error(`Error parsing app ${link}:`, e);
+          continue;
+        }
+      }
+
       const kidsWords = ["kids", "child", "toddler", "baby", "preschool", "learning"];
-      const kidsApps = apps.filter((app) =>
-        kidsWords.some((word) => app.title.toLowerCase().includes(word))
+      const kidsApps = apps.filter(app =>
+        kidsWords.some(word =>
+          (app.title + app.description).toLowerCase().includes(word)
+        )
       );
 
       results.push({
@@ -50,16 +86,21 @@ export async function POST(req: NextRequest) {
         total: apps.length,
         kids: kidsApps.length,
         relevance: ((kidsApps.length / (apps.length || 1)) * 100).toFixed(1),
-        apps: apps.slice(0, 10),
+        apps,
+        country,
+        language: lang,
       });
     } catch (e) {
+      console.error(`Error for keyword "${keyword}":`, e);
       results.push({
         keyword,
         total: 0,
         kids: 0,
         relevance: "0.0",
         apps: [],
-        error: "Ошибка при парсинге или блокировка Google",
+        error: "Error parsing or Google block",
+        country,
+        language: lang,
       });
     }
   }
