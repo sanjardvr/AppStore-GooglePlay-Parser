@@ -5,14 +5,41 @@ import { useState } from "react";
 import styles from "./page.module.css";
 
 const countries = [
-  { code: "us", name: "🇺🇸 USA" },
-  { code: "gb", name: "🇬🇧 UK" },
-  { code: "de", name: "🇩🇪 Germany" },
-  { code: "fr", name: "🇫🇷 France" },
-  { code: "jp", name: "🇯🇵 Japan" },
-  { code: "ru", name: "🇷🇺 Russia" },
+  { code: "gb", name: "🇬🇧 United Kingdom" },
+  { code: "us", name: "🇺🇸 United States" },
+  { code: "au", name: "🇦🇺 Australia" },
   { code: "ca", name: "🇨🇦 Canada" },
+  { code: "sa", name: "🇸🇦 Saudi Arabia" },
+  { code: "ae", name: "🇦🇪 UAE" },
+  { code: "vn", name: "🇻🇳 Vietnam" },
+  { code: "id", name: "🇮🇩 Indonesia" },
+  { code: "es", name: "🇪🇸 Spain" },
+  { code: "it", name: "🇮🇹 Italy" },
+  { code: "cn", name: "🇨🇳 China" },
+  { code: "kr", name: "🇰🇷 South Korea" },
+  { code: "de", name: "🇩🇪 Germany" },
+  { code: "pl", name: "🇵🇱 Poland" },
+  { code: "pt", name: "🇵🇹 Portugal" },
+  { code: "br", name: "🇧🇷 Brazil" },
+  { code: "ru", name: "🇷🇺 Russia" },
+  { code: "tr", name: "🇹🇷 Turkey" },
+  { code: "fr", name: "🇫🇷 France" },
+  { code: "in", name: "🇮🇳 India" },
+  { code: "se", name: "🇸🇪 Sweden" },
+  { code: "ua", name: "🇺🇦 Ukraine" },
+  { code: "cz", name: "🇨🇿 Czechia" },
+  { code: "hr", name: "🇭🇷 Croatia" },
+  { code: "ro", name: "🇷🇴 Romania" },
+  { code: "my", name: "🇲🇾 Malaysia" },
+  { code: "il", name: "🇮🇱 Israel" },
+  { code: "gr", name: "🇬🇷 Greece" },
+  { code: "nl", name: "🇳🇱 Netherlands" },
+  { code: "dk", name: "🇩🇰 Denmark" },
+  { code: "fi", name: "🇫🇮 Finland" },
+  { code: "th", name: "🇹🇭 Thailand" },
+  { code: "mx", name: "🇲🇽 Mexico" },
 ];
+
 
 export default function KeywordAnalysisPage() {
   const [keywords, setKeywords] = useState("child game\ntoddler app\nbaby learning");
@@ -120,6 +147,7 @@ export default function KeywordAnalysisPage() {
                     <thead>
                       <tr>
                         <th>Title</th>
+                        <th>Subtitle</th>
                         <th>Developer</th>
                         <th>Description</th>
                         <th>URL</th>
@@ -129,8 +157,9 @@ export default function KeywordAnalysisPage() {
                       {r.apps.map((app: any, index: number) => (
                         <tr key={index}>
                           <td>{app.title}</td>
+                          <td>{app.subtitle || "N/A"}</td>
                           <td>{app.developer || "N/A"}</td>
-                          <td>{app.description || app.subtitle || "N/A"}</td>
+                          <td>{app.description || "N/A"}</td>
                           <td>
                             <a href={app.url} target="_blank" rel="noopener noreferrer">
                               View

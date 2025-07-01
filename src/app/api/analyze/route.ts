@@ -3,13 +3,11 @@ import axios from "axios";
 import * as cheerio from "cheerio";
 
 const LANGUAGE_MAP: Record<string, string> = {
-  us: "en",
-  gb: "en",
-  de: "de",
-  fr: "fr",
-  jp: "ja",
-  ru: "ru",
-  ca: "en",
+  us: "en", gb: "en", au: "en", ca: "en", sa: "ar", ae: "ar", vn: "vi", id: "id",
+  es: "es", it: "it", cn: "zh", kr: "ko", de: "de", pl: "pl", pt: "pt", br: "pt",
+  ru: "ru", tr: "tr", fr: "fr", in: "hi", se: "sv", ua: "uk", cz: "cs", hr: "hr",
+  ro: "ro", my: "ms", il: "he", gr: "el", nl: "nl", dk: "da", fi: "fi", th: "th",
+  mx: "es"
 };
 
 export async function POST(req: NextRequest) {
@@ -36,7 +34,7 @@ export async function POST(req: NextRequest) {
 
       const $ = cheerio.load(response.data);
       const appLinks: string[] = [];
-      
+
       $("a[href^='/store/apps/details']").each((_, el) => {
         const link = $(el).attr("href");
         if (link && !appLinks.includes(link)) {
@@ -45,6 +43,7 @@ export async function POST(req: NextRequest) {
       });
 
       const apps = [];
+
       for (const link of appLinks.slice(0, 10)) {
         try {
           const appUrl = `https://play.google.com${link}&hl=${lang}`;
@@ -54,14 +53,42 @@ export async function POST(req: NextRequest) {
               "Accept-Language": `${lang},en;q=0.9`,
             },
           });
-          const $$ = cheerio.load(appResponse.data);
 
+          const $$ = cheerio.load(appResponse.data);
           const title = $$("h1").first().text().trim();
           const developer = $$("a[href^='/store/apps/dev']").first().text().trim();
           const description = $$("div[itemprop='description'] > span").first().text().trim();
+          
+          // Parse subtitle from Play Store
+          // Look for subtitle in multiple possible locations
+          let subtitle = "";
+          
+          // Try different selectors for subtitle/tagline
+          const subtitleSelectors = [
+            "div[data-g-id='description'] p:first", // Short description paragraph
+            "div[data-g-id='description'] span:first", // Short description span
+            "div[jsname='sngebd'] span", // App tagline
+            "div[jsname='sngebd'] p", // App tagline paragraph
+            "c-wiz[jsrenderer='RBsfwb'] div[jsname='sngebd']", // Another subtitle location
+            "div[jsname='sngebd']", // Generic subtitle container
+          ];
+
+          for (const selector of subtitleSelectors) {
+            const possibleSubtitle = $$(selector).first().text().trim();
+            if (possibleSubtitle && possibleSubtitle.length > 0 && possibleSubtitle.length < 200) {
+              subtitle = possibleSubtitle;
+              break;
+            }
+          }
+
+          // If no subtitle found through selectors, try to extract from meta tags
+          if (!subtitle) {
+            subtitle = $$("meta[name='description']").attr("content")?.trim()?.substring(0, 100) || "";
+          }
 
           apps.push({
             title,
+            subtitle: subtitle || "N/A",
             developer,
             description,
             url: appUrl,
@@ -77,7 +104,7 @@ export async function POST(req: NextRequest) {
       const kidsWords = ["kids", "child", "toddler", "baby", "preschool", "learning"];
       const kidsApps = apps.filter(app =>
         kidsWords.some(word =>
-          (app.title + app.description).toLowerCase().includes(word)
+          (app.title + app.subtitle + app.description).toLowerCase().includes(word)
         )
       );
 
