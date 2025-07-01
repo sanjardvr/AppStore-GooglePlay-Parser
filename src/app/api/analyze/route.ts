@@ -54,10 +54,42 @@ export async function POST(req: NextRequest) {
             },
           });
 
-          const $$ = cheerio.load(appResponse.data);
-          const title = $$("h1").first().text().trim();
-          const developer = $$("a[href^='/store/apps/dev']").first().text().trim();
-          const description = $$("div[itemprop='description'] > span").first().text().trim();
+          const $ = cheerio.load(appResponse.data);
+          
+          // Parse title with multiple selectors
+          const title = $("h1[itemprop='name']").first().text().trim() ||
+                       $("h1").first().text().trim() ||
+                       "N/A";
+          
+          // Parse developer with multiple selectors
+          const developer = $("a[href^='/store/apps/dev']").first().text().trim() ||
+                           $("span[itemprop='name']").first().text().trim() ||
+                           $("div[jsname='sngebd'] span").first().text().trim() ||
+                           "N/A";
+          
+          // Parse description using the specified class and fallbacks
+          let description = "";
+          const descriptionSelectors = [
+            "div.bARER[data-g-id='description']", // Primary selector you specified
+            "div[data-g-id='description']", // Alternative without specific class
+            "div[jsname='sngebd']", // App description container
+            "div[itemprop='description']", // Schema.org description
+            "div[jsname='sngebd'] > div", // Description wrapper
+            "span[jsslot]", // Another description location
+          ];
+
+          for (const selector of descriptionSelectors) {
+            const possibleDescription = $(selector).first().text().trim();
+            if (possibleDescription && possibleDescription.length > 50) {
+              description = possibleDescription;
+              break;
+            }
+          }
+
+          // If no description found, try meta tags
+          if (!description) {
+            description = $("meta[name='description']").attr("content")?.trim() || "";
+          }
           
           // Parse subtitle from Play Store
           // Look for subtitle in multiple possible locations
@@ -65,17 +97,21 @@ export async function POST(req: NextRequest) {
           
           // Try different selectors for subtitle/tagline
           const subtitleSelectors = [
-            "div[data-g-id='description'] p:first", // Short description paragraph
-            "div[data-g-id='description'] span:first", // Short description span
-            "div[jsname='sngebd'] span", // App tagline
-            "div[jsname='sngebd'] p", // App tagline paragraph
-            "c-wiz[jsrenderer='RBsfwb'] div[jsname='sngebd']", // Another subtitle location
-            "div[jsname='sngebd']", // Generic subtitle container
+            "div[jsname='sngebd'] span:first", // App tagline
+            "div[jsname='sngebd'] p:first", // App tagline paragraph
+            "c-wiz[jsrenderer='RBsfwb'] div[jsname='sngebd'] span", // Another subtitle location
+            "div[jsname='sngebd'] div:first", // Generic subtitle container
+            "div.bARER[data-g-id='description'] span:first", // Subtitle within description area
+            "span[jsslot]:first", // First span with jsslot
           ];
 
           for (const selector of subtitleSelectors) {
-            const possibleSubtitle = $$(selector).first().text().trim();
-            if (possibleSubtitle && possibleSubtitle.length > 0 && possibleSubtitle.length < 200) {
+            const possibleSubtitle = $(selector).first().text().trim();
+            // Make sure subtitle is different from description and not too long
+            if (possibleSubtitle && 
+                possibleSubtitle.length > 0 && 
+                possibleSubtitle.length < 200 &&
+                possibleSubtitle !== description) {
               subtitle = possibleSubtitle;
               break;
             }
@@ -83,14 +119,17 @@ export async function POST(req: NextRequest) {
 
           // If no subtitle found through selectors, try to extract from meta tags
           if (!subtitle) {
-            subtitle = $$("meta[name='description']").attr("content")?.trim()?.substring(0, 100) || "";
+            const metaDesc = $("meta[name='description']").attr("content")?.trim();
+            if (metaDesc && metaDesc !== description) {
+              subtitle = metaDesc.substring(0, 100);
+            }
           }
 
           apps.push({
-            title,
+            title: title || "N/A",
             subtitle: subtitle || "N/A",
-            developer,
-            description,
+            developer: developer || "N/A",
+            description: description || "N/A",
             url: appUrl,
             country,
             language: lang,
